@@ -1,0 +1,98 @@
+---
+title: "Data_Changeover"
+author: "Jain_Tarash"
+date: ""
+output: html_document
+---
+
+```{r Importing Libraries}
+library(shiny)
+library(tidyverse)
+library(ggplot2)
+```
+
+```{r Loading Data}
+dataset1 <- read.csv('WPP2019_TotalPopulationBySex.csv')
+dataset2 <- NULL
+dataset3 <- NULL
+```
+
+
+```{r Dashboard}
+ui <- fluidPage(
+titlePanel('Data_ChangeOver'),
+  sidebarLayout(
+    sidebarPanel(
+      selectInput(inputId = 'choice',
+                  label = "Select the Data",  
+                  choices = c("World Popultaion","Dataset2", "Dataset3"),
+                  selected = NULL,  multiple = FALSE,  selectize =TRUE,  
+                  width = '300px'),
+      
+      conditionalPanel(
+        condition = "input.choice == 'World Popultaion'",
+        sliderInput(inputId = "year",
+                  label = "Select the year",
+                  1950, 2100, 1,
+                  value = 1950,
+                  width = '300px',
+                  animate = animationOptions(interval = .1,
+                               playButton = icon('play', "fa-2x"),
+                               pauseButton = icon('pause', "fa-2x"))),
+                ),
+      
+      conditionalPanel(
+        condition = "input.choice == 'Dataset2'",
+        sliderInput(inputId = "NULL",
+                  label = "NULL",
+                  0, 1, .01,
+                  value = 0,
+                  width = '300px',
+                  animate = animationOptions(interval = .1,
+                               playButton = icon('play', "fa-2x"),
+                               pauseButton = icon('pause', "fa-2x"))),
+                )
+      ),
+
+    mainPanel(
+      # CODE BELOW: 
+    textOutput("text_year"),
+    plotOutput("plot", height = 600, width = 1000),
+    textOutput("description")
+    )
+  )
+)
+```
+
+```{r Server}
+server <- function(input, output, session) {
+  ch = reactive(input$choice)
+  #if (ch == 'World Popultaion'){
+    output$plot <- renderPlot({
+      input_year = input$year
+      dataset1 %>% 
+        filter(Variant == "Medium") %>% 
+        filter(Time == input_year) %>% 
+        top_n(10,PopTotal) %>% 
+        mutate(Location = fct_reorder(Location, PopTotal))%>% 
+        ggplot(aes(x = PopTotal, y = Location, fill = Location))+ 
+        geom_col() +
+        geom_text(aes(label=PopTotal), vjust=1.6, color="black", size=3.5)
+    })
+      output$text_year <- renderText({
+      paste("Year:",input$year)
+      })
+     output$description <- renderText({
+      paste('DataSource')
+      })
+    #}
+
+}
+
+```
+
+
+```{r App}
+shinyApp(ui, server)
+```
+
