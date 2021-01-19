@@ -12,7 +12,7 @@ library(ggplot2)
 ```
 
 ```{r Loading Data}
-dataset1 <- read.csv('WPP2019_TotalPopulationBySex.csv')
+dataset1 <- read.csv('Population_2019.csv')
 dataset2 <- NULL
 dataset3 <- NULL
 ```
