@@ -7,13 +7,13 @@ output: html_document
 
 ```{r Importing Libraries}
 library(shiny)
-library(tidyverse)
+library(dplyr)
 library(ggplot2)
 ```
 
 ```{r Loading Data}
 dataset1 <- read.csv('Population_2019.csv')
-dataset2 <- NULL
+dataset2 <- read.csv('Covid_data.csv')
 dataset3 <- NULL
 ```
 
@@ -25,12 +25,12 @@ titlePanel('Data_ChangeOver'),
     sidebarPanel(
       selectInput(inputId = 'choice',
                   label = "Select the Data",  
-                  choices = c("World Popultaion","Dataset2", "Dataset3"),
+                  choices = c("World Popultaion Trends","Covid-19 Trends", "Dataset3"),
                   selected = NULL,  multiple = FALSE,  selectize =TRUE,  
                   width = '300px'),
       
       conditionalPanel(
-        condition = "input.choice == 'World Popultaion'",
+        condition = "input.choice == 'World Popultaion Trends'",
         sliderInput(inputId = "year",
                   label = "Select the year",
                   1950, 2100, 1,
@@ -42,10 +42,10 @@ titlePanel('Data_ChangeOver'),
                 ),
       
       conditionalPanel(
-        condition = "input.choice == 'Dataset2'",
-        sliderInput(inputId = "NULL",
-                  label = "NULL",
-                  0, 1, .01,
+        condition = "input.choice == 'Covid-19 Trends'",
+        sliderInput(inputId = "covid_month",
+                  label = "Select the Month",
+                  18262, 18647, 4,
                   value = 0,
                   width = '300px',
                   animate = animationOptions(interval = .1,
@@ -56,7 +56,7 @@ titlePanel('Data_ChangeOver'),
 
     mainPanel(
       # CODE BELOW: 
-    textOutput("text_year"),
+    textOutput("text_1"),
     plotOutput("plot", height = 600, width = 1000),
     textOutput("description")
     )
@@ -65,31 +65,86 @@ titlePanel('Data_ChangeOver'),
 ```
 
 ```{r Server}
-server <- function(input, output, session) {
-  ch = reactive(input$choice)
-  #if (ch == 'World Popultaion'){
-    output$plot <- renderPlot({
-      input_year = input$year
-      dataset1 %>% 
-        filter(Variant == "Medium") %>% 
-        filter(Time == input_year) %>% 
-        top_n(10,PopTotal) %>% 
-        mutate(Location = fct_reorder(Location, PopTotal))%>% 
-        ggplot(aes(x = PopTotal, y = Location, fill = Location))+ 
-        geom_col() +
-        geom_text(aes(label=PopTotal), vjust=1.6, color="black", size=3.5)
+
+
+  server <- function(input, output, session) {
+    
+    ch = reactive(input$choice)
+    if(as.ch == 'World Popultaion Trends'){
+      output$plot <- renderPlot({
+        input_year = input$year
+        dataset1 %>% 
+          filter(Variant == "Medium") %>% 
+          filter(Time == input_year) %>% 
+          top_n(10,PopTotal) %>% 
+          mutate(Location = fct_reorder(Location, PopTotal))%>% 
+          ggplot(aes(x = PopTotal, y = Location, fill = Location))+ 
+          geom_col() +
+          geom_text(aes(label=PopTotal), vjust=1.6, color="black", size=3.5)
+      })
+        output$text_1 <- renderText({
+        paste("Year:",input$year)
+        })
+       output$description <- renderText({
+        paste('DataSource')
+        })
+    }
+    
+  else if (ch == 'Covid-19 Trends'){
+  output$plot <- renderPlot({
+    input_covidmonth = input$covid_month
+    dataset2 %>% 
+      filter(location != 'World') %>%
+      filter(location != 'International') %>%
+      mutate(date_num = as.numeric(as.Date(date))) %>% 
+      filter(date_num == input_covidmonth) %>% 
+      top_n(10,total_cases) %>% 
+      mutate(location = fct_reorder(location, total_cases)) %>% 
+      ggplot(aes(x = total_cases, y = location, fill = location))+ 
+      geom_col() +
+        geom_text(aes(label=total_cases), vjust=1.6, color="black", size=3.5)
+    
     })
-      output$text_year <- renderText({
-      paste("Year:",input$year)
-      })
+      output$text_1 <- renderText({
+      paste("Date:",as.Date(input$covid_month, origin = "1970-01-01"))
+        })
      output$description <- renderText({
-      paste('DataSource')
+      paste('https://ourworldindata.org/coronavirus-source-data')
       })
-    #}
+    
+    
+    }
+}
+```
+
+
+```{r}
+server <- function(input, output, session) {
+  output$plot <- renderPlot({
+    input_covidmonth = input$covid_month
+    dataset2 %>% 
+      filter(location != 'World') %>%
+      filter(location != 'International') %>%
+      mutate(date_num = as.numeric(as.Date(date))) %>% 
+      filter(date_num == input_covidmonth) %>% 
+      top_n(10,total_cases) %>% 
+      mutate(location = fct_reorder(location, total_cases)) %>% 
+      ggplot(aes(x = total_cases, y = location, fill = location))+ 
+      geom_col() +
+        geom_text(aes(label=total_cases), vjust=1.6, color="black", size=3.5)
+    
+    })
+      output$text_1 <- renderText({
+      paste("Date:",as.Date(input$covid_month, origin = "1970-01-01"))
+        })
+     output$description <- renderText({
+      paste('https://ourworldindata.org/coronavirus-source-data')
+      })
 
 }
-
 ```
+
+
 
 
 ```{r App}
